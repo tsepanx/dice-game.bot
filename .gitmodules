@@ -1,0 +1,3 @@
+[submodule "tglib"]
+	path = tglib
+	url = https://codeberg.org/st/tglib.git
