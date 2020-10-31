@@ -1,6 +1,5 @@
 import os
 
-from peewee import SqliteDatabase
 from telegram import ParseMode
 
 
@@ -9,10 +8,6 @@ def does_exist(path):
 
 
 PROJECT_PREFIX = os.path.dirname(__file__) + "/"
-DATABASE_PATH = PROJECT_PREFIX + "db"
-
-MY_DATABASE = SqliteDatabase(DATABASE_PATH)
-
 
 class CommandName:
     GAME_ADD = 'join'
