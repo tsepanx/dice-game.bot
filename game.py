@@ -299,7 +299,7 @@ class GameSession:
         cubes_data = self.cubes.get_cubes_values()
         res_count = cubes_data[self.prev_move.value]
 
-        use_cheat = not (self.is_maputa or self.prev_move.value == CHEAT_CARD_VALUE)
+        use_cheat = not self.is_maputa and not self.prev_move.value == CHEAT_CARD_VALUE
 
         if use_cheat:
             res_count += cubes_data[CHEAT_CARD_VALUE]

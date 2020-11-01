@@ -6,25 +6,15 @@ import telegram as tg
 from tglib.classes.chat import ChatHandler, BotMessageException
 from tglib.bot import Bot
 from tglib.types import MESSAGE_TYPES
+from tglib.utils import condition_command_run
 
 import tglib.classes.message as my
-# from telegram_api_python.chat import ChatHandler, BotMessageException
-# import telegram_api_python.message as my
 
 from constants import Phrase, MyDialogState, MAX_START_CUBES_COUNT
 from functions import get_reply_markup
 from game import get_game_manager, STOP_ROUND_MARKUP, GameException
 
-
-def condition_command_run(condition_state=None):
-    def decorator(func):
-        def wrapper(chat, *args, **kwargs):
-            if condition_state == chat.state or condition_state is None:
-                func(chat, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
+debug = True
 
 
 def gm_argument_pass(func):
@@ -62,8 +52,11 @@ def join(chat: ChatHandler, _: tg.Update):
 @condition_command_run(condition_state=MyDialogState.WAITING_FOR_PLAYERS)
 @gm_argument_pass
 def play(chat: ChatHandler, _: tg.Update, gm):
-    gm.start_session()
-    chat.state = MyDialogState.GAME_IS_ON
+    if debug or len(gm.added_players) > 1:
+        gm.start_session()
+        chat.state = MyDialogState.GAME_IS_ON
+    else:
+        raise BotMessageException(**Phrase.PLAYERS_NOT_ENOUGH)
 
 
 @gm_argument_pass
@@ -84,7 +77,7 @@ def setcubes(chat: ChatHandler, update: tg.Update, gm):
 def reset(chat: ChatHandler, _: tg.Update, gm):
     chat.state = MyDialogState.DEFAULT
     gm.reset_to_defaults()
-    chat.send_message(**Phrase.ON_AGREE, reply_keyboard=tg.ReplyKeyboardRemove())
+    chat.send_message(**Phrase.ON_AGREE, reply_markup=tg.ReplyKeyboardRemove())
 
 
 
@@ -99,7 +92,7 @@ class MyChatHandler(ChatHandler):
         setcubes = ('Set custom cubes count', setcubes)
         reset = ('reset current game state', reset)
 
-        
+
     def on_keyboard_callback_query(self, update: tg.Update):
         gm = get_game_manager(self)
 
@@ -138,5 +131,4 @@ class MyChatHandler(ChatHandler):
 
 
 if __name__ == '__main__':
-    # additional_reply, extended_exception=game_exception_handling)
-    Bot(MyChatHandler).main()
+    Bot(MyChatHandler, game_exception_handling).main()

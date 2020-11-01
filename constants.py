@@ -1,13 +1,6 @@
 import os
-
 from telegram import ParseMode
 
-
-def does_exist(path):
-    return os.path.exists(path)
-
-
-PROJECT_PREFIX = os.path.dirname(__file__) + "/"
 
 class CommandName:
     GAME_ADD = 'join'
@@ -28,10 +21,10 @@ MAX_START_CUBES_COUNT = 10
 
 
 class Phrase:
-    PLAYERS_LESS = 'Not enough players, try /join'
+    PLAYERS_NOT_ENOUGH = {'text': 'Not enough players, try /join'}
     WRONG_NUMBER = 'Type correct number'
 
-    ON_NO_COMMAND_ENTITY = 'No expected entity provided'
+    ON_NO_COMMAND_ENTITY = 'No expected value provided, e.g /setcubes 5'
 
     NUMBER_TOO_BIG = lambda x: f'Number is too big. Max is {x}'
 
@@ -53,12 +46,12 @@ class Phrase:
 
     @staticmethod
     def on_new_round(n, boolean, users, cubes):
-        res = f' --- Round: {n} ---\n --- Cubes: {len(cubes)} --- \n'
+        res = f'*{n}* Round \n*{len(cubes)}* Cubes \nMaputa: *{boolean}*\n\n= *Players Cubes* =\n'
 
         for user in users:
             res += f'`{user.username}` - *{len(cubes[user.id])}*\n'
 
-        res += f' --- \nMaputa: {boolean}\n---'
+        res += f'\n\n*Moves History*'
         return {'text': res, 'parse_mode': ParseMode.MARKDOWN}
 
     @staticmethod
