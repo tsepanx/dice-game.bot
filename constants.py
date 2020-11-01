@@ -23,7 +23,7 @@ class MyDialogState:
 
 
 START_CUBES_COUNT = 3
-TRUMP_CARD_VALUE = 1
+CHEAT_CARD_VALUE = 1
 MAX_START_CUBES_COUNT = 10
 
 
@@ -64,7 +64,7 @@ class Phrase:
     @staticmethod
     def on_end_round_1(cnt, default_value, use_base_value):
         res = f'There are {cnt} cubes of "{default_value}"' + \
-              (f' and "{TRUMP_CARD_VALUE}"' if use_base_value else '') + \
+              (f' and "{CHEAT_CARD_VALUE}"' if use_base_value else '') + \
               ', so...'
 
         return {'text': res, 'parse_mode': ParseMode.MARKDOWN}

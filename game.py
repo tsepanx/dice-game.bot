@@ -8,7 +8,7 @@ from telegram import ParseMode
 from tglib.classes.chat import BotMessageException
 from tglib.classes.message import Message
 
-from constants import START_CUBES_COUNT, TRUMP_CARD_VALUE, Phrase, MyDialogState
+from constants import START_CUBES_COUNT, CHEAT_CARD_VALUE, Phrase, MyDialogState
 from functions import convert, get_reply_markup, get_reply_keyboard
 
 CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
@@ -157,15 +157,15 @@ class PlayerMove:
             if is_maputa:
                 return True
             else:
-                return self.value != TRUMP_CARD_VALUE
+                return self.value != CHEAT_CARD_VALUE
 
         if not is_maputa:
-            if self.value == TRUMP_CARD_VALUE:
-                if prev.value == TRUMP_CARD_VALUE:
+            if self.value == CHEAT_CARD_VALUE:
+                if prev.value == CHEAT_CARD_VALUE:
                     return self.count > prev.count
                 return self.count * 2 >= prev.count
             else:
-                if prev.value == TRUMP_CARD_VALUE:
+                if prev.value == CHEAT_CARD_VALUE:
                     return prev.count * 2 <= self.count
                 if self.count == prev.count:
                     return self.value > prev.value
@@ -188,7 +188,7 @@ class GameSession:
         self.is_maputa = False
         self.maputa_val = None
 
-        self.stored_trump_moves = set()
+        self.stored_cheat_moves = set()
 
         self.current_player = 0
         self.current_round = 0
@@ -206,7 +206,7 @@ class GameSession:
         self.current_round += 1
         self.prev_move = None
         self.maputa_val = None
-        self.stored_trump_moves = set()
+        self.stored_cheat_moves = set()
 
         mess_args = Phrase.on_new_round(self.current_round, self.is_maputa, self.players, self.cubes)
         text = mess_args['text']
@@ -278,11 +278,11 @@ class GameSession:
         move = PlayerMove(*nums)
 
         if not self.is_maputa:
-            if move.value == TRUMP_CARD_VALUE:
-                if move.count in self.stored_trump_moves:
+            if move.value == CHEAT_CARD_VALUE:
+                if move.count in self.stored_cheat_moves:
                     raise IncorrectMoveException
                 else:
-                    self.stored_trump_moves.add(move.count)
+                    self.stored_cheat_moves.add(move.count)
 
         if not move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
             raise IncorrectMoveException
@@ -299,15 +299,15 @@ class GameSession:
         cubes_data = self.cubes.get_cubes_values()
         res_count = cubes_data[self.prev_move.value]
 
-        use_trump = not (self.is_maputa or self.prev_move.value == TRUMP_CARD_VALUE)
+        use_cheat = not (self.is_maputa or self.prev_move.value == CHEAT_CARD_VALUE)
 
-        if use_trump:
-            res_count += cubes_data[TRUMP_CARD_VALUE]
+        if use_cheat:
+            res_count += cubes_data[CHEAT_CARD_VALUE]
 
         player_to_lose_ind = self.current_player - (0 if res_count >= self.prev_move.count else 1)
         player = self.players[player_to_lose_ind]
 
-        mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_trump)
+        mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
         mess_args2 = Phrase.on_end_round_2(player.name)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
