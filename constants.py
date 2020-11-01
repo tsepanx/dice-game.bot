@@ -1,14 +1,6 @@
 import os
 from telegram import ParseMode
 
-
-class CommandName:
-    GAME_ADD = 'join'
-    GAME_RUN = 'play'
-    GAME_SET_CUBES = 'setcubes'
-    GAME_RESET = 'reset'
-
-
 class MyDialogState:
     DEFAULT = 0
     WAITING_FOR_PLAYERS = 1
@@ -29,6 +21,7 @@ class Phrase:
     NUMBER_TOO_BIG = lambda x: f'Number is too big. Max is {x}'
 
     JOIN_BUTTON = "Join the game"
+    START_BUTTON = 'Start game'
     ALREADY_JOINED = "You've already joined!"
 
     ROUND_MESSAGE_APPEND_TURN = lambda x, y: f'\n`{x}` - *{y}*'

@@ -6,7 +6,7 @@ import telegram as tg
 from tglib.classes.chat import ChatHandler, BotMessageException
 from tglib.bot import Bot
 from tglib.types import MESSAGE_TYPES
-from tglib.utils import condition_command_run
+from tglib.utils import condition_command_run, get_column_markup
 
 import tglib.classes.message as my
 
@@ -14,7 +14,7 @@ from constants import Phrase, MyDialogState, MAX_START_CUBES_COUNT
 from functions import get_reply_markup
 from game import get_game_manager, STOP_ROUND_MARKUP, GameException
 
-debug = True
+debug = False
 
 
 def gm_argument_pass(func):
@@ -42,21 +42,14 @@ def additional_reply(chat: ChatHandler, update: tg.Update, gm):
         gm.on_new_message(my.Message(chat, update))
 
 
-@condition_command_run(condition_state=MyDialogState.DEFAULT)
-def join(chat: ChatHandler, _: tg.Update):
-    chat.state = MyDialogState.WAITING_FOR_PLAYERS
-    chat.send_message(**Phrase.WAIT_FOR_PLAYERS,
-                      reply_markup=get_reply_markup('PLAYER', Phrase.JOIN_BUTTON))
-
-
-@condition_command_run(condition_state=MyDialogState.WAITING_FOR_PLAYERS)
-@gm_argument_pass
-def play(chat: ChatHandler, _: tg.Update, gm):
-    if debug or len(gm.added_players) > 1:
-        gm.start_session()
-        chat.state = MyDialogState.GAME_IS_ON
-    else:
-        raise BotMessageException(**Phrase.PLAYERS_NOT_ENOUGH)
+# @condition_command_run(condition_state=MyDialogState.WAITING_FOR_PLAYERS)
+# @gm_argument_pass
+# def play(chat: ChatHandler, _: tg.Update, gm):
+#     if debug or len(gm.added_players) > 1:
+#         gm.start_session()
+#         chat.state = MyDialogState.GAME_IS_ON
+#     else:
+#         raise BotMessageException(**Phrase.PLAYERS_NOT_ENOUGH)
 
 
 @gm_argument_pass
@@ -80,17 +73,27 @@ def reset(chat: ChatHandler, _: tg.Update, gm):
     chat.send_message(**Phrase.ON_AGREE, reply_markup=tg.ReplyKeyboardRemove())
 
 
-
-
-# ONLY_ADMINS_COMMANDS = [CommandName.GAME_RESET]
-
 class MyChatHandler(ChatHandler):
+    ONLY_ADMINS_COMMANDS = ['reset']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.join_message = None
+        self.join_button = (Phrase.JOIN_BUTTON, 'PLAYER')
+        self.start_button = (Phrase.START_BUTTON, 'START')
+
     class CommandsEnum(ChatHandler.CommandsEnum):
         # <command_name> - (description, func to run)
-        join = ('join before you can /play game session', join)
-        play = ('start the game', play)
-        setcubes = ('Set custom cubes count', setcubes)
-        reset = ('reset current game state', reset)
+        play = ('*Play*!', None)
+        setcubes = ('Set cubes', setcubes)
+        reset = ('Reset', reset)
+
+    @condition_command_run(condition_state=MyDialogState.DEFAULT)
+    def on_play(self, update: tg.Update):
+        self.state = MyDialogState.WAITING_FOR_PLAYERS
+
+        reply_markup = get_column_markup(self.join_button)
+
+        self.join_message = self.send_message(**Phrase.WAIT_FOR_PLAYERS, reply_markup=reply_markup)
 
 
     def on_keyboard_callback_query(self, update: tg.Update):
@@ -100,7 +103,11 @@ class MyChatHandler(ChatHandler):
         data = query.data.split()
         user = query.from_user
 
-        if data[0] == 'PLAYER':
+        if data[0] == 'START':
+            gm.start_session()
+            self.state = MyDialogState.GAME_IS_ON
+
+        elif data[0] == 'PLAYER':
             if self.state != MyDialogState.WAITING_FOR_PLAYERS:
                 return
 
@@ -113,6 +120,14 @@ class MyChatHandler(ChatHandler):
                 self.send_message(**mess_args)
             else:
                 self.send_alert(query.id, text=Phrase.ALREADY_JOINED)
+
+            if debug or len(gm.added_players) > 1:
+                reply_markup = get_column_markup(self.join_button, self.start_button)
+
+                self.edit_message(
+                    message=self.join_message,
+                    reply_markup=reply_markup
+                )
 
         elif data[0] == 'CUBES':
             if self.state != MyDialogState.GAME_IS_ON:

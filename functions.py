@@ -17,14 +17,6 @@ def get_reply_markup(data, button_text):
     return InlineKeyboardMarkup.from_button(button)
 
 
-def get_row_reply_markup(buttons_fields, data):
-    res = []
-    for field in buttons_fields:
-        res.append(InlineKeyboardButton(field, callback_data=data))
-
-    return InlineKeyboardMarkup.from_row(res)
-
-
 def get_reply_keyboard(buttons_list):
     keyboard = ReplyKeyboardMarkup.from_row(buttons_list)
     keyboard.one_time_keyboard = True

@@ -56,17 +56,16 @@ game_managers = {}
 
 
 def get_game_manager(chat):
-    if chat in game_managers:
-        return game_managers[chat]
-    else:
-        gm = GameManager(chat)
-        game_managers[chat] = gm
-        return gm
+    if chat.id not in game_managers:
+        print('not', chat.id)
+        game_managers[chat.id] = GameManager(chat)
+    print([game_managers[i].added_players for i in game_managers])
+    return game_managers[chat.id]
 
 
 class GameManager:
     current_game = None
-    added_players = []
+    added_players = [] # TODO shared between different chats
     start_cubes_count = START_CUBES_COUNT
 
     def __init__(self, chat):
