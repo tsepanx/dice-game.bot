@@ -52,17 +52,6 @@ class IncorrectMoveException(GameException):
         super().__init__(Phrase.WRONG_MOVE_PATTERN, parse_mode=parse_mode)
 
 
-game_managers = {}
-
-
-def get_game_manager(chat):
-    if chat.id not in game_managers:
-        print('not', chat.id)
-        game_managers[chat.id] = GameManager(chat)
-    print([game_managers[i].added_players for i in game_managers])
-    return game_managers[chat.id]
-
-
 class GameManager:
     current_game = None
     added_players = [] # TODO shared between different chats
@@ -348,7 +337,7 @@ class GameSession:
         mess_args = Phrase.on_congratulate_winner(winner.name)
         self.send_message(**mess_args)
         self.chat.state = MyDialogState.DEFAULT
-        get_game_manager(self.chat).reset_to_defaults()
+        self.chat.gm.reset_to_defaults()
 
         raise GameEndException
 
