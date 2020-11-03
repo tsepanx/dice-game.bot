@@ -220,7 +220,7 @@ class GameSession:
                 self.chat.delete_message(delete_mess)
             self.chat.delete_message(user_answer)
 
-            new_text = Phrase.ROUND_MESSAGE_APPEND_TURN(sender, text_to_delete)
+            new_text = Phrase.ROUND_MESSAGE_APPEND_TURN(text_to_delete, sender)
             self.last_round_message_text += new_text
 
             self.chat.edit_message(text=self.last_round_message_text,

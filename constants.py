@@ -24,7 +24,7 @@ class Phrase:
     START_BUTTON = 'Start game'
     ALREADY_JOINED = "You've already joined!"
 
-    ROUND_MESSAGE_APPEND_TURN = lambda x, y: f'\n`{x}` - *{y}*'
+    ROUND_MESSAGE_APPEND_TURN = lambda x, y: f'\n*{x}* - `{y}`'
 
     BUTTON_CUBES = 'My cubes'
     STOP_ROUND = 'Вскрываемся!'

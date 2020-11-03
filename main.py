@@ -23,7 +23,7 @@ def game_exception_handling(e: Exception, update, _, chat):
         error_mess = chat.send_message(**e.mess_kwargs,
                                        reply_markup=STOP_ROUND_MARKUP,
                                        reply_to_message_id=update.message.message_id)
-        get_game_manager(chat).current_game.mess_to_delete_on_new_turn.extend([error_mess, update.message])
+        chat.gm.current_game.mess_to_delete_on_new_turn.extend([error_mess, update.message])
         return error_mess
     return False
 
