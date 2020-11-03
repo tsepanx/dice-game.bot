@@ -6,7 +6,7 @@ import telegram as tg
 from tglib.classes.chat import ChatHandler, BotMessageException
 from tglib.bot import Bot
 from tglib.types import MESSAGE_TYPES
-from tglib.utils import is_state, get_column_markup
+from tglib.utils import is_state, get_button_markup
 
 import tglib.classes.message as my
 import tglib.classes.command as my
@@ -15,7 +15,7 @@ from constants import Phrase, MyDialogState, MAX_START_CUBES_COUNT
 from functions import get_reply_markup
 from game import STOP_ROUND_MARKUP, GameException, GameManager
 
-debug = True
+debug = False
 
 def game_exception_handling(e: Exception, update, _, chat):
     if isinstance(e, GameException):
@@ -48,13 +48,13 @@ class MyChatHandler(ChatHandler):
     def on_play(self, update: tg.Update):
         self.state = MyDialogState.WAITING_FOR_PLAYERS
 
-        reply_markup = get_column_markup(self.join_button)
+        reply_markup = get_button_markup(self.join_button)
 
         self.join_message = self.send_message(**Phrase.WAIT_FOR_PLAYERS, reply_markup=reply_markup)
 
 
-    def on_setcubes(chat: ChatHandler, update: tg.Update):
-        command = my.Command(chat, update)
+    def on_setcubes(self, update: tg.Update):
+        command = my.Command(self, update)
 
         try:
             cnt = int(command.entity_text)
@@ -65,7 +65,7 @@ class MyChatHandler(ChatHandler):
         except ValueError:
             raise BotMessageException(Phrase.ON_NO_COMMAND_ENTITY)
 
-    def on_reset(chat: ChatHandler, _: tg.Update):
+    def on_reset(self, _: tg.Update):
         self.state = MyDialogState.DEFAULT
         self.gm.reset_to_defaults()
         self.send_message(**Phrase.ON_AGREE, reply_markup=tg.ReplyKeyboardRemove())
@@ -85,8 +85,6 @@ class MyChatHandler(ChatHandler):
                 return
 
             if user not in self.gm.added_players:
-                logging.info('JOIN ' + user.name)
-
                 self.gm.added_players.append(user)
 
                 mess_args = Phrase.on_user_joined(user.name)
@@ -95,7 +93,7 @@ class MyChatHandler(ChatHandler):
                 self.send_alert(query.id, text=Phrase.ALREADY_JOINED)
 
             if debug or len(self.gm.added_players) > 1:
-                reply_markup = get_column_markup(self.join_button, self.start_button)
+                reply_markup = get_button_markup(self.join_button, self.start_button)
 
                 self.edit_message(
                     message=self.join_message,
@@ -114,6 +112,9 @@ class MyChatHandler(ChatHandler):
 
     def reply(self, update: tg.Update, message_type: MESSAGE_TYPES):
         super().reply(update, message_type)
+
+        print(update.message.text)
+        # logging.debug(update.message.reply_to_message)
 
         if self.state == MyDialogState.GAME_IS_ON:
             self.gm.on_new_message(my.Message(self, update))

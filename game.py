@@ -8,7 +8,7 @@ from telegram import ParseMode
 from tglib.classes.chat import BotMessageException
 from tglib.classes.message import Message
 
-from constants import START_CUBES_COUNT, CHEAT_CARD_VALUE, Phrase, MyDialogState
+from constants import START_CUBES_COUNT, CHEAT_CARD_VALUE, Phrase, MyDialogState, users_emoji, winner_emoji
 from functions import convert, get_reply_markup, get_reply_keyboard
 
 CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
@@ -203,8 +203,6 @@ class GameSession:
         self.chat.pin_chat_message(self.last_round_message, disable_notification=True)
         self.last_round_message_text = text
 
-        logging.info(self.cubes)
-
         if self.is_maputa:
             self.current_player -= 1
 
@@ -223,7 +221,7 @@ class GameSession:
             new_text = Phrase.ROUND_MESSAGE_APPEND_TURN(text_to_delete, sender)
             self.last_round_message_text += new_text
 
-            self.chat.edit_message(text=self.last_round_message_text,
+            self.edit_message(text=self.last_round_message_text,
                                    message=edit_mess,
                                    parse_mode=ParseMode.MARKDOWN,
                                    reply_markup=CUBES_REPLY_MARKUP)
@@ -234,14 +232,13 @@ class GameSession:
             self.current_player = self.current_player % len(self.players)
 
         self.mess_to_delete_on_new_turn = []
+
         mess_args = Phrase.on_change_turn(self.players[self.current_player].name)
         mess = self.send_message(**mess_args, reply_markup=STOP_ROUND_MARKUP)
 
         self.mess_to_delete_on_new_turn.append(mess)
 
     def on_new_message(self, message: Message):
-        logging.info(self.last_round_message_text)
-
         words = message.text.split()
 
         if message.user != self.players[self.current_player]:
@@ -296,12 +293,11 @@ class GameSession:
         player = self.players[player_to_lose_ind]
 
         mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
-        mess_args2 = Phrase.on_end_round_2(player.name)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
         time.sleep(2.5)
-        self.send_message(**mess_args2)
-        time.sleep(1.5)
+        self.send_message(**Phrase.on_lose(player.name))
+        time.sleep(2)
 
         self.current_player = player_to_lose_ind
 
@@ -333,6 +329,7 @@ class GameSession:
 
     def end_game(self):
         winner = self.players[0]
+        users_emoji[winner.username] = winner_emoji
 
         mess_args = Phrase.on_congratulate_winner(winner.name)
         self.send_message(**mess_args)
@@ -341,5 +338,34 @@ class GameSession:
 
         raise GameEndException
 
+    @staticmethod
+    def decorate_nickname(s):
+        def find_nick(s, n, emoji):
+            if n in s:
+                new = f'{emoji} {n} {emoji}'
+                s = s.replace(n, new)
+                return s
+            return False
+
+        for n in users_emoji:
+            t = find_nick(s, '@' + n, users_emoji[n])
+            if t:
+                s = t
+            else:
+                t = find_nick(s, n, users_emoji[n])
+                s = t if t else s
+
+        return s
+
     def send_message(self, **kwargs):
-        return self.chat.send_message(**kwargs)
+        text = kwargs.pop('text')
+        text = self.decorate_nickname(text)
+
+        return self.chat.send_message(text=text, **kwargs)
+
+    def edit_message(self, **kwargs):
+        text = kwargs.pop('text')
+        text = self.decorate_nickname(text)
+
+        return self.chat.edit_message(text=text, **kwargs)
+

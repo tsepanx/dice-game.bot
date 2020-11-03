@@ -11,6 +11,15 @@ START_CUBES_COUNT = 3
 CHEAT_CARD_VALUE = 1
 MAX_START_CUBES_COUNT = 10
 
+winner_emoji = '🏆'
+bool_emoji = lambda x: '✅' if x else '❌'
+
+users_emoji = {
+    'tsepan': '🤔',
+    'aqlez': '♨️',
+    'Troyanez373': '🔱',
+}
+
 
 class Phrase:
     PLAYERS_NOT_ENOUGH = {'text': 'Not enough players, try /join'}
@@ -31,15 +40,15 @@ class Phrase:
 
     WRONG_MOVE_PATTERN = 'Incorrect move'
 
-    GAME_INIT = {'text': 'Initializing new game session...'}
+    GAME_INIT = {'text': 'Starting new game'}
     ON_AGREE = {'text': 'Ok'}
 
-    WAIT_FOR_PLAYERS = {'text': "Waiting for players..."}
+    WAIT_FOR_PLAYERS = {'text': "🤔 Waiting for players... 🤔"}
     on_user_joined = lambda x: {'text': f'{x} joined game'}
 
     @staticmethod
     def on_new_round(n, boolean, users, cubes):
-        res = f'*{n}* Round \n*{len(cubes)}* Cubes \nMaputa: *{boolean}*\n\n= *Players Cubes* =\n'
+        res = f'*{n}* Round \n*{len(cubes)}* Cubes \nMaputa: *{bool_emoji(boolean)}*\n\n🎲 *Players Cubes* 🎲\n\n'
 
         for user in users:
             res += f'`{user.username}` - *{len(cubes[user.id])}*\n'
@@ -49,15 +58,14 @@ class Phrase:
 
     @staticmethod
     def on_end_round_1(cnt, default_value, use_base_value):
-        res = f'There are {cnt} cubes of "{default_value}"' + \
-              (f' and "{CHEAT_CARD_VALUE}"' if use_base_value else '') + \
-              ', so...'
+        res = f'There are {cnt} cubes of *' + \
+            (f' *{CHEAT_CARD_VALUE}*, ' if use_base_value else '') + f'{default_value}*'
 
         return {'text': res, 'parse_mode': ParseMode.MARKDOWN}
 
-    on_end_round_2 = lambda x: {'text': f'{x} loses his cube... :('}
-    on_players_list = lambda x: {'text': 'Alright, starting game.. Players:\n' + "\n".join(x)}
+    on_lose = lambda x: {'text': f'{x} - ❌'}
+    on_players_list = lambda x: {'text': 'Players:\n' + "\n".join(x)}
 
-    on_kick_player = lambda x: {'text': f'Player {x} just got kicked out of the game... :('}
+    on_kick_player = lambda x: {'text': f'Player {x} just got kicked out of the game... 🤬'}
     on_change_turn = lambda x: {'text': f"It's {x} turn"}
-    on_congratulate_winner = lambda x: {'text': f'Congratulations! {x} is a winner!'}
+    on_congratulate_winner = lambda x: {'text': f'Congratulations! {x} is a winner! 😃 👍'}
