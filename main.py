@@ -15,7 +15,7 @@ from constants import Phrase, MyDialogState, MAX_START_CUBES_COUNT
 from functions import get_reply_markup
 from game import STOP_ROUND_MARKUP, GameException, GameManager
 
-debug = False
+debug = True
 
 def game_exception_handling(e: Exception, update, _, chat):
     if isinstance(e, GameException):
@@ -33,7 +33,7 @@ class MyChatHandler(ChatHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.join_message = None
-        self.join_button = (Phrase.JOIN_BUTTON, 'PLAYER')
+        self.join_button = (Phrase.JOIN_BUTTON, 'JOIN')
         self.start_button = (Phrase.START_BUTTON, 'START')
 
         self.gm = GameManager(self)
@@ -77,10 +77,11 @@ class MyChatHandler(ChatHandler):
         user = query.from_user
 
         if data[0] == 'START':
-            self.gm.start_session()
-            self.state = MyDialogState.GAME_IS_ON
+            if self.state == MyDialogState.WAITING_FOR_PLAYERS:
+                self.gm.start_session()
+                self.state = MyDialogState.GAME_IS_ON
 
-        elif data[0] == 'PLAYER':
+        elif data[0] == 'JOIN':
             if self.state != MyDialogState.WAITING_FOR_PLAYERS:
                 return
 
@@ -92,7 +93,7 @@ class MyChatHandler(ChatHandler):
             else:
                 self.send_alert(query.id, text=Phrase.ALREADY_JOINED)
 
-            if debug or len(self.gm.added_players) > 1:
+            if debug or len(self.gm.added_players) > 1: # Enough players to start
                 reply_markup = get_button_markup(self.join_button, self.start_button)
 
                 self.edit_message(
@@ -114,7 +115,6 @@ class MyChatHandler(ChatHandler):
         super().reply(update, message_type)
 
         print(update.message.text)
-        # logging.debug(update.message.reply_to_message)
 
         if self.state == MyDialogState.GAME_IS_ON:
             self.gm.on_new_message(my.Message(self, update))

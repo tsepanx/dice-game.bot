@@ -15,10 +15,14 @@ CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
 STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
 
 
-def true_rand(a, b):
-    tmp = [i for i in range(a, b + 1)]
-    r.shuffle(tmp)
-    return (tmp[r.randint(0, b - a)] + a + b + r.randint(a, b) * r.randint(a, b)) % (b - a + 1) + 1
+def true_rand(a, b, n):
+    res = [r.randint(a, b)]
+    for i in range(n - 1):
+        t = r.randint(a, b)
+        if t == res[i]:
+            t = r.randint(a, b)
+        res.append(t)
+    return sorted(res)
 
 
 def move_matches(nums):
@@ -88,9 +92,7 @@ class CubesSet:
 
     def shuffle(self, start=False):
         for player in self.players:
-            self.__cubes[player.id] = sorted([true_rand(1, 6) for _ in range(
-                len(self.__cubes[player.id]) if not start else self.start_cubes_cnt
-            )])
+            self.__cubes[player.id] = true_rand(1, 6, len(self.__cubes[player.id]) if not start else self.start_cubes_cnt)
 
     def __getitem__(self, item):
         try:
