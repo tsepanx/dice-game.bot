@@ -10,6 +10,7 @@ from tglib.classes.message import Message
 
 from constants import START_CUBES_COUNT, CHEAT_CARD_VALUE, Phrase, MyDialogState, users_emoji, winner_emoji
 from functions import convert, get_reply_markup, get_reply_keyboard
+from db import User, db_inc
 
 CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
 STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
@@ -331,7 +332,20 @@ class GameSession:
 
     def end_game(self):
         winner = self.players[0]
-        users_emoji[winner.username] = winner_emoji
+        # users_emoji[winner.username] = winner_emoji
+
+        # inc('new', 'winnings')
+        # inc('new', 'games')
+
+        # for player in self.chat.gm.added_players:
+        #     is_winner = int(player == winner)
+        #     try:
+        #         if is_winner:
+        #             db_inc(player.username, 'winnings')
+        #         db_inc(player.username, 'games')
+        #     except Exception as e:
+        #         user = User.create(username=player.username, games)
+
 
         mess_args = Phrase.on_congratulate_winner(winner.name)
         self.send_message(**mess_args)

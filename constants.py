@@ -15,9 +15,12 @@ winner_emoji = '🏆'
 bool_emoji = lambda x: '✅' if x else '❌'
 
 users_emoji = {
-    'tsepan': '🤔',
+    'tsepan': '🔆',
     'aqlez': '♨️',
     'Troyanez373': '🔱',
+    'alexanderchmykhov': '🔓',
+    'degra_dator': '☣',
+    'EvgenyCuSO4': '💤',
 }
 
 
