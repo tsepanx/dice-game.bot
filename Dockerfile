@@ -1,4 +1,3 @@
-# docker build -t cubesbot:latest .
 FROM python:alpine
 WORKDIR /usr/src/app
 
