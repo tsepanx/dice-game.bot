@@ -40,7 +40,7 @@ class MyChatHandler(ChatHandler):
 
     class CommandsEnum(ChatHandler.CommandsEnum):
         # <command_name> - (description, func to run)
-        play = ('*Play*!', None)
+        play = ('Start a new game', None)
         setcubes = ('Set cubes', None)
         reset = ('Reset', None)
 
@@ -88,8 +88,13 @@ class MyChatHandler(ChatHandler):
             if user not in self.gm.added_players:
                 self.gm.added_players.append(user)
 
-                mess_args = Phrase.on_user_joined(user.name)
-                self.send_message(**mess_args)
+                new_text = self.join_message.text + '\n' + Phrase.on_user_joined(user.name)['text']
+
+                self.join_message = self.edit_message(
+                    message=self.join_message,
+                    text=new_text,
+                )
+
             else:
                 self.send_alert(query.id, text=Phrase.ALREADY_JOINED)
 

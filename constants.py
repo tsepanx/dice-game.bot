@@ -43,11 +43,10 @@ class Phrase:
 
     WRONG_MOVE_PATTERN = 'Incorrect move'
 
-    GAME_INIT = {'text': 'Starting new game'}
     ON_AGREE = {'text': 'Ok'}
 
-    WAIT_FOR_PLAYERS = {'text': "🤔 Waiting for players... 🤔"}
-    on_user_joined = lambda x: {'text': f'{x} joined game'}
+    WAIT_FOR_PLAYERS = {'text': "🤔 Waiting for players... 🤔\n\nJoined players:"}
+    on_user_joined = lambda x: {'text': f'{x}'}
 
     @staticmethod
     def on_new_round(n, boolean, users, cubes):
@@ -67,7 +66,6 @@ class Phrase:
         return {'text': res, 'parse_mode': ParseMode.MARKDOWN}
 
     on_lose = lambda x: {'text': f'{x} - ❌'}
-    on_players_list = lambda x: {'text': 'Players:\n' + "\n".join(x)}
 
     on_kick_player = lambda x: {'text': f'Player {x} just got kicked out of the game... 🤬'}
     on_change_turn = lambda x: {'text': f"It's {x} turn"}

@@ -15,14 +15,20 @@ from db import User, db_inc
 CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
 STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
 
+# SLEEP_RATIO = 0.9
+
+# sleep = lambda x: time.sleep(x * SLEEP_RATIO)
+
 
 def true_rand(a, b, n):
-    res = [r.randint(a, b)]
-    for i in range(n - 1):
+    res = []
+
+    for i in range(n):
         t = r.randint(a, b)
-        if t == res[i]:
+        if i > 0 and t == res[i - 1]:
             t = r.randint(a, b)
         res.append(t)
+
     return sorted(res)
 
 
@@ -68,9 +74,6 @@ class GameManager:
     def start_session(self):
         self.added_players = list(set(self.added_players))  # Check for unique users
 
-        mess_args = Phrase.on_players_list(list(map(lambda x: x.name, self.added_players)))
-        self.chat.send_message(**mess_args)
-
         self.current_game = GameSession(self.chat, self.start_cubes_count, players=self.added_players)
 
     def reset_to_defaults(self):
@@ -93,7 +96,7 @@ class CubesSet:
 
     def shuffle(self, start=False):
         for player in self.players:
-            self.__cubes[player.id] = true_rand(1, 6, len(self.__cubes[player.id]) if not start else self.start_cubes_cnt)
+            self.__cubes[player.id] = true_rand(1, 6, self.start_cubes_cnt if start else  len(self.__cubes[player.id]) )
 
     def __getitem__(self, item):
         try:
@@ -189,8 +192,6 @@ class GameSession:
         self.last_round_message = None
         self.last_round_message_text = None
 
-        self.send_message(**Phrase.GAME_INIT)
-        time.sleep(1)
         self.new_round()
 
     def new_round(self):
@@ -267,6 +268,7 @@ class GameSession:
 
         if not self.is_maputa:
             if move.value == CHEAT_CARD_VALUE:
+                import pdb;pdb.set_trace()
                 if move.count in self.stored_cheat_moves:
                     raise IncorrectMoveException
                 else:
@@ -283,7 +285,7 @@ class GameSession:
         self.prev_move = move
         self.new_turn()
 
-    def on_open_up(self):
+    def on_open_up(self): # Func runs on "Вскрываемся!"
         cubes_data = self.cubes.get_cubes_values()
         res_count = cubes_data[self.prev_move.value]
 
@@ -298,9 +300,7 @@ class GameSession:
         mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
-        time.sleep(2.5)
         self.send_message(**Phrase.on_lose(player.name))
-        time.sleep(2)
 
         self.current_player = player_to_lose_ind
 
@@ -323,11 +323,10 @@ class GameSession:
         self.players.remove(player)
         self.current_player += 1
 
-        time.sleep(1)
         mess_args = Phrase.on_kick_player(player.name)
         self.send_message(**mess_args)
 
-        if len(self.players) == 1:
+        if len(self.players) <= 1:
             self.end_game()
 
     def end_game(self):
