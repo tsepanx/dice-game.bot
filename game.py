@@ -96,7 +96,7 @@ class CubesSet:
 
     def shuffle(self, start=False):
         for player in self.players:
-            self.__cubes[player.id] = true_rand(1, 6, self.start_cubes_cnt if start else  len(self.__cubes[player.id]) )
+            self.__cubes[player.id] = true_rand(1, 6, self.start_cubes_cnt if start else len(self.__cubes[player.id]) )
 
     def __getitem__(self, item):
         try:
@@ -266,15 +266,15 @@ class GameSession:
 
         move = PlayerMove(*nums)
 
+        if not move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
+            raise IncorrectMoveException
+
         if not self.is_maputa:
             if move.value == CHEAT_CARD_VALUE:
                 if move.count in self.stored_cheat_moves:
                     raise IncorrectMoveException
                 else:
                     self.stored_cheat_moves.add(move.count)
-
-        if not move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
-            raise IncorrectMoveException
 
         if self.is_maputa and not self.maputa_val:
             self.maputa_val = move.value
