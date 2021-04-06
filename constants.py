@@ -21,6 +21,7 @@ users_emoji = {
     'alexanderchmykhov': '🔓',
     'degra_dator': '☣',
     'EvgenyCuSO4': '💤',
+    'universitet1971': '❇️',
 }
 
 
