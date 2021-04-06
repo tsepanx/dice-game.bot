@@ -268,7 +268,6 @@ class GameSession:
 
         if not self.is_maputa:
             if move.value == CHEAT_CARD_VALUE:
-                import pdb;pdb.set_trace()
                 if move.count in self.stored_cheat_moves:
                     raise IncorrectMoveException
                 else:
