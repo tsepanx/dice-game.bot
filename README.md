@@ -7,9 +7,11 @@ Multiple players are expected to play, so you have to add this bot to any telegr
 
 ### Bot
 
-Main game logic is in [game.py](./game.py)
+Running bot instance is available at [@cool_cubes_bot](https://t.me/cool_cubes_bot)
 
 Uses my **[tglib](https://github.com/tsepanx/tglib)** project as a submodule, to manage `python-telegram-bot` library
+
+Main game logic is in [game.py](./game.py)
 
 Docker image is available at [tsepanx/cubesbot](https://hub.docker.com/r/tsepanx/cubesbot)
 
