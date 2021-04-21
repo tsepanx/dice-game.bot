@@ -11,7 +11,7 @@ from tglib.utils import is_state, get_button_markup
 import tglib.classes.message as my
 import tglib.classes.command as my
 
-from constants import Phrase, MyDialogState, MAX_START_CUBES_COUNT
+from constants import Phrase, MyDialogState
 from functions import get_reply_markup
 from game import STOP_ROUND_MARKUP, GameException, GameManager
 
@@ -41,7 +41,7 @@ class MyChatHandler(ChatHandler):
     class CommandsEnum(ChatHandler.CommandsEnum):
         # <command_name> - (description, func to run)
         play = ('Start a new game', None)
-        setcubes = ('Set cubes', None)
+        setdice = ('Set start dice count', None)
         reset = ('Reset', None)
 
     @is_state(MyDialogState.DEFAULT)
@@ -53,13 +53,11 @@ class MyChatHandler(ChatHandler):
         self.join_message = self.send_message(**Phrase.WAIT_FOR_PLAYERS, reply_markup=reply_markup)
 
 
-    def on_setcubes(self, update: tg.Update):
+    def on_setdice(self, update: tg.Update):
         command = my.Command(self, update)
 
         try:
             cnt = int(command.entity_text)
-            if cnt > MAX_START_CUBES_COUNT:
-                raise BotMessageException(Phrase.NUMBER_TOO_BIG(MAX_START_CUBES_COUNT))
             self.gm.start_cubes_count = cnt
             self.send_message(**Phrase.ON_AGREE)
         except ValueError:
@@ -106,11 +104,11 @@ class MyChatHandler(ChatHandler):
                     reply_markup=reply_markup
                 )
 
-        elif data[0] == 'CUBES':
+        elif data[0] == 'DICE':
             if self.state != MyDialogState.GAME_IS_ON:
                 return
 
-            cubes_set = self.gm.current_game.cubes[user.id]
+            cubes_set = self.gm.current_game.dice_manager[user.id]
             self.send_alert(query.id, text=str(cubes_set))
 
         else:

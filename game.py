@@ -1,5 +1,5 @@
 import logging
-import random as r
+import random
 import time
 
 import telegram
@@ -8,34 +8,34 @@ from telegram import ParseMode
 from tglib.classes.chat import BotMessageException
 from tglib.classes.message import Message
 
-from constants import START_CUBES_COUNT, CHEAT_CARD_VALUE, Phrase, MyDialogState, users_emoji, winner_emoji
+from constants import START_DICE_COUNT, MIN_CARD_VALUE, MAX_CARD_VALUE, CHEAT_CARD_VALUE, Phrase, MyDialogState, users_emoji, winner_emoji
 from functions import convert, get_reply_markup, get_reply_keyboard
 from db import User, db_inc
 
-CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
+DICE_REPLY_MARKUP = get_reply_markup('DICE', Phrase.BUTTON_DICE)
 STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
 
 
-def true_rand(a, b, n):
-    # Attempt to make default python random() more `random`
+def random_list(a, b, n):
+    # Attempt to make python random() more `random`
     res = []
 
     for i in range(n):
-        t = r.randint(a, b)
+        t = random.randint(a, b)
         if i > 0 and t == res[i - 1]: # if got the same value, then `rerand` it
-            t = r.randint(a, b)
+            t = random.randint(a, b)
         res.append(t)
 
     return sorted(res)
 
 
-def player_move_check(ints):
+def player_move_is_available(ints):
     # Checks if move with couple of ints fits to the game rules
 
     if len(ints) != 2:
         return False
 
-    if not (1 <= ints[1] <= 6):
+    if not (MIN_CARD_VALUE <= ints[1] <= MAX_CARD_VALUE):
         return False
 
     return True
@@ -62,7 +62,7 @@ class IncorrectMoveException(GameException):
 class GameManager:
     current_game = None
     added_players = [] # TODO shared between different chats
-    start_cubes_count = START_CUBES_COUNT
+    dice_cnt = START_DICE_COUNT
 
     def __init__(self, chat):
         self.chat = chat
@@ -70,7 +70,7 @@ class GameManager:
     def start_session(self):
         self.added_players = list(set(self.added_players))  # Check for unique users
 
-        self.current_game = GameSession(self.chat, self.start_cubes_count, players=self.added_players)
+        self.current_game = GameSession(self.chat, self.dice_cnt, players=self.added_players)
 
     def reset_to_defaults(self):
         self.current_game = None
@@ -81,58 +81,61 @@ class GameManager:
             self.current_game.on_new_message(message)
 
 
-class CubesSet:
-    def __init__(self, players, start_cubes_cnt):
-        self.__cubes = {}
-        self.start_cubes_cnt = start_cubes_cnt
-        self.prev_maputa = False
+class DiceManager:
+    def __init__(self, players, dice_cnt):
+        self.dice_dict = {}
+        self.dice_cnt = dice_cnt
         self.players = players
 
-        self.shuffle(start=True)
+        self.roll_dice(first=True)
 
-    def shuffle(self, start=False):
+    def roll_dice(self, first=False):
         for player in self.players:
-            self.__cubes[player.id] = true_rand(1, 6, self.start_cubes_cnt if start else len(self.__cubes[player.id]) )
+            if first:
+                n = self.dice_cnt
+            else:
+                n = len(self.dice_dict[player.id])
+
+            self.dice_dict[player.id] = random_list(MIN_CARD_VALUE, MAX_CARD_VALUE, n)
 
     def __getitem__(self, item):
         try:
-            return self.__cubes[item]
+            return self.dice_dict[item]
         except KeyError:
             logging.warning("No key: %s" % item)
             return None
 
     def __len__(self):
         res = 0
-        for s in self.__cubes.values():
+        for s in self.dice_dict.values():
             res += len(s)
 
         return res
 
     def __str__(self):
-        return convert(self.__cubes)
+        return convert(self.dice_dict)
 
-    def get_cubes_values(self):
-        res = {}
-        for i in range(1, 7):
-            res[i] = 0
+    def get_dice_map(self):
+        # Get list of count for each dice card
 
-        for cube_set in self.__cubes.values():
-            for val in cube_set:
-                res[val] += 1
+        res = [0] * (MAX_CARD_VALUE - MIN_CARD_VALUE + 1)
+
+        for nums in self.dice_dict.values():
+            for i in nums:
+                res[i - 1] += 1
 
         return res
 
     def kick_player(self, player_id):
         try:
-            self.__cubes.pop(player_id)
+            self.dice_dict.pop(player_id)
         except KeyError:
             logging.warning(f"Key Error: {player_id}")
 
-    def remove_cube_from_player(self, player_id):
-        self.__cubes[player_id].pop()
-        self.shuffle()
+    def pop_dice_from(self, player_id):
+        self.dice_dict[player_id].pop()
 
-        if len(self.__cubes[player_id]) == 0:
+        if not len(self.dice_dict[player_id]):
             self.kick_player(player_id)
             raise KickPLayerException
 
@@ -142,7 +145,7 @@ class PlayerMove:
         self.count = count
         self.value = value
 
-    def is_move_correct(self, prev, is_maputa, maputa_value=None):
+    def is_valid(self, prev, is_maputa, maputa_value=None):
         if prev is None:
             if is_maputa:
                 return True
@@ -169,11 +172,11 @@ class PlayerMove:
 
 
 class GameSession:
-    def __init__(self, chat, start_cubes_count, players=None):
+    def __init__(self, chat, dice_cnt, players=None):
         self.chat = chat
 
         self.players = players
-        self.cubes = CubesSet(players, start_cubes_count)
+        self.dice_manager = DiceManager(players, dice_cnt)
 
         self.is_maputa = False
         self.maputa_val = None
@@ -195,11 +198,12 @@ class GameSession:
         self.prev_move = None
         self.maputa_val = None
         self.stored_cheat_moves = set()
+        self.dice_manager.roll_dice()
 
-        mess_args = Phrase.on_new_round(self.current_round, self.is_maputa, self.players, self.cubes)
+        mess_args = Phrase.on_new_round(self.current_round, self.is_maputa, self.players, self.dice_manager)
         text = mess_args['text']
 
-        self.pinned_message = self.send_message(**mess_args, reply_markup=CUBES_REPLY_MARKUP)
+        self.pinned_message = self.send_message(**mess_args, reply_markup=DICE_REPLY_MARKUP)
         self.chat.pin_chat_message(self.pinned_message, disable_notification=True)
         self.pinned_message_text = text
 
@@ -225,7 +229,7 @@ class GameSession:
             message=self.pinned_message,
             text=self.pinned_message_text,
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=CUBES_REPLY_MARKUP
+            reply_markup=DICE_REPLY_MARKUP
         )
 
     def new_turn(self):
@@ -259,12 +263,12 @@ class GameSession:
         except ValueError:
             return
 
-        if not player_move_check(new_move_integers):
+        if not player_move_is_available(new_move_integers):
             raise IncorrectMoveException
 
         player_move = PlayerMove(*new_move_integers)
 
-        if not player_move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
+        if not player_move.is_valid(self.prev_move, self.is_maputa, self.maputa_val):
             raise IncorrectMoveException
 
         if not self.is_maputa:
@@ -283,18 +287,29 @@ class GameSession:
         self.new_turn()
 
     def on_open_up(self): # Func runs on "Вскрываемся!"
-        cubes_data = self.cubes.get_cubes_values()
-        res_count = cubes_data[self.prev_move.value]
+        dice_map = self.dice_manager.get_dice_map()
+        res_count = dice_map[self.prev_move.value - 1]
 
         use_cheat = not self.is_maputa and not self.prev_move.value == CHEAT_CARD_VALUE
-
-        if use_cheat:
-            res_count += cubes_data[CHEAT_CARD_VALUE]
+        res_count += dice_map[CHEAT_CARD_VALUE - 1] if use_cheat else 0
 
         player_to_lose_ind = self.current_player - (0 if res_count >= self.prev_move.count else 1)
         player = self.players[player_to_lose_ind]
 
         mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
+
+        def str_dice_dict(d: dict, players: list):
+            items = list(d.items())
+            s = '*Players cubes*\n'
+
+            for i in items:
+                user = list(filter(lambda x: x.id == i[0], players))[0].username
+                s += f'{user}: {i[1]}\n'
+
+            return s
+
+        s = str_dice_dict(self.dice_manager.dice_dict, self.players)
+        self.send_message(text=s, parse_mode=ParseMode.MARKDOWN)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
         self.send_message(**Phrase.on_lose(player.name))
@@ -302,7 +317,7 @@ class GameSession:
         self.current_player = player_to_lose_ind
 
         try:
-            self.cubes.remove_cube_from_player(player.id)
+            self.dice_manager.pop_dice_from(player.id)
         except KickPLayerException:
             try:
                 self.kick_player(player)
@@ -313,7 +328,7 @@ class GameSession:
             except GameEndException:
                 return
 
-        self.is_maputa = len(self.cubes[player.id]) == 1 and len(self.players) > 2
+        self.is_maputa = len(self.dice_manager[player.id]) == 1 and len(self.players) > 2
         self.new_round()
 
     def kick_player(self, player):
