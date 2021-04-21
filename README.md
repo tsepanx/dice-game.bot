@@ -1,7 +1,7 @@
-# Cubes (Perudo) game telegram bot
+# Dice game telegram bot
 
 Bot based on game called **Perudo**
-[Wikipedia](https://ru.wikipedia.org/wiki/%D0%9F%D0%B5%D1%80%D1%83%D0%B4%D0%BE)
+[Wikipedia](https://en.wikipedia.org/wiki/Dudo)
 
 Multiple players are expected to play, so you have to add this bot to any telegram group, and promote him to admin.
 

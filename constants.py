@@ -29,7 +29,7 @@ class Phrase:
     PLAYERS_NOT_ENOUGH = {'text': 'Not enough players, try /join'}
     WRONG_NUMBER = 'Type correct number'
 
-    ON_NO_COMMAND_ENTITY = 'e.g /setcubes 5'
+    ON_NO_COMMAND_ENTITY = 'e.g. /setcubes 5'
 
     NUMBER_TOO_BIG = lambda x: f'Number is too big. Max is {x}'
 

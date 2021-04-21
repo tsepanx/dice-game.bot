@@ -15,31 +15,27 @@ from db import User, db_inc
 CUBES_REPLY_MARKUP = get_reply_markup('CUBES', Phrase.BUTTON_CUBES)
 STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
 
-# SLEEP_RATIO = 0.9
-
-# sleep = lambda x: time.sleep(x * SLEEP_RATIO)
-
 
 def true_rand(a, b, n):
+    # Attempt to make default python random() more `random`
     res = []
 
     for i in range(n):
         t = r.randint(a, b)
-        if i > 0 and t == res[i - 1]:
+        if i > 0 and t == res[i - 1]: # if got the same value, then `rerand` it
             t = r.randint(a, b)
         res.append(t)
 
     return sorted(res)
 
 
-def move_matches(nums):
-    if len(nums) > 2:
+def player_move_check(ints):
+    # Checks if move with couple of ints fits to the game rules
+
+    if len(ints) != 2:
         return False
 
-    if len(nums) == 1:
-        return False
-
-    if not (1 <= nums[1] <= 6):
+    if not (1 <= ints[1] <= 6):
         return False
 
     return True
@@ -188,9 +184,9 @@ class GameSession:
         self.current_round = 0
         self.prev_move = None
 
-        self.mess_to_delete_on_new_turn = []
-        self.last_round_message = None
-        self.last_round_message_text = None
+        self.messages_to_delete = [] # List of messages, deleted on turn passes to next player
+        self.pinned_message = None
+        self.pinned_message_text = None
 
         self.new_round()
 
@@ -203,44 +199,46 @@ class GameSession:
         mess_args = Phrase.on_new_round(self.current_round, self.is_maputa, self.players, self.cubes)
         text = mess_args['text']
 
-        self.last_round_message = self.send_message(**mess_args, reply_markup=CUBES_REPLY_MARKUP)
-        self.chat.pin_chat_message(self.last_round_message, disable_notification=True)
-        self.last_round_message_text = text
+        self.pinned_message = self.send_message(**mess_args, reply_markup=CUBES_REPLY_MARKUP)
+        self.chat.pin_chat_message(self.pinned_message, disable_notification=True)
+        self.pinned_message_text = text
 
         if self.is_maputa:
             self.current_player -= 1
 
         self.new_turn()
 
-    def move_bot_greeting_under_round_message(self, user_answer: telegram.Message):
-        if self.mess_to_delete_on_new_turn:
-            edit_mess = self.last_round_message
+    def edit_pinned_message_by(self, user_answer: telegram.Message):
+        # import pdb;pdb.set_trace()
+        # if self.messages_to_delete:
+        for d in self.messages_to_delete:
+            self.chat.delete_message(d)
 
-            text_to_delete = user_answer.text
-            sender = user_answer.from_user.username
-            for delete_mess in self.mess_to_delete_on_new_turn:
-                self.chat.delete_message(delete_mess)
-            self.chat.delete_message(user_answer)
+        sender = user_answer.from_user.username
+        to_delete_text = user_answer.text
+        self.chat.delete_message(user_answer)
 
-            new_text = Phrase.ROUND_MESSAGE_APPEND_TURN(text_to_delete, sender)
-            self.last_round_message_text += new_text
+        append_text = Phrase.ROUND_MESSAGE_APPEND_TURN(to_delete_text, sender)
+        self.pinned_message_text += append_text 
 
-            self.edit_message(text=self.last_round_message_text,
-                                   message=edit_mess,
-                                   parse_mode=ParseMode.MARKDOWN,
-                                   reply_markup=CUBES_REPLY_MARKUP)
+        self.edit_message(
+            message=self.pinned_message,
+            text=self.pinned_message_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=CUBES_REPLY_MARKUP
+        )
 
     def new_turn(self):
         self.current_player += 1
         if self.current_player >= len(self.players):
             self.current_player = self.current_player % len(self.players)
 
-        self.mess_to_delete_on_new_turn = []
+        self.messages_to_delete = []
 
         mess_args = Phrase.on_change_turn(self.players[self.current_player].name)
         mess = self.send_message(**mess_args, reply_markup=STOP_ROUND_MARKUP)
 
-        self.mess_to_delete_on_new_turn.append(mess)
+        self.messages_to_delete.append(mess)
 
     def on_new_message(self, message: Message):
         words = message.text.split()
@@ -250,38 +248,38 @@ class GameSession:
 
         if words[0] == Phrase.STOP_ROUND:
             if self.prev_move is not None:
-                self.move_bot_greeting_under_round_message(message.mess_class)
+                self.edit_pinned_message_by(message.mess_class)
                 self.on_open_up()
                 return
             else:
                 raise IncorrectMoveException
 
         try:
-            nums = list(map(int, words))
+            new_move_integers = list(map(int, words))
         except ValueError:
             return
 
-        if not move_matches(nums):
+        if not player_move_check(new_move_integers):
             raise IncorrectMoveException
 
-        move = PlayerMove(*nums)
+        player_move = PlayerMove(*new_move_integers)
 
-        if not move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
+        if not player_move.is_move_correct(self.prev_move, self.is_maputa, self.maputa_val):
             raise IncorrectMoveException
 
         if not self.is_maputa:
-            if move.value == CHEAT_CARD_VALUE:
-                if move.count in self.stored_cheat_moves:
+            if player_move.value == CHEAT_CARD_VALUE:
+                if player_move.count in self.stored_cheat_moves:
                     raise IncorrectMoveException
                 else:
-                    self.stored_cheat_moves.add(move.count)
+                    self.stored_cheat_moves.add(player_move.count)
 
         if self.is_maputa and not self.maputa_val:
-            self.maputa_val = move.value
+            self.maputa_val = player_move.value
 
-        self.move_bot_greeting_under_round_message(message.mess_class)
+        self.edit_pinned_message_by(message.mess_class)
 
-        self.prev_move = move
+        self.prev_move = player_move
         self.new_turn()
 
     def on_open_up(self): # Func runs on "Вскрываемся!"
