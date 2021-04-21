@@ -13,7 +13,6 @@ from functions import convert, get_reply_markup, get_reply_keyboard
 from db import User, db_inc
 
 DICE_REPLY_MARKUP = get_reply_markup('DICE', Phrase.BUTTON_DICE)
-STOP_ROUND_MARKUP = get_reply_keyboard([Phrase.STOP_ROUND])
 
 
 def random_list(a, b, n):
@@ -69,6 +68,7 @@ class GameManager:
 
     def start_session(self):
         self.added_players = list(set(self.added_players))  # Check for unique users
+        random.shuffle(self.added_players)
 
         self.current_game = GameSession(self.chat, self.dice_cnt, players=self.added_players)
 
@@ -102,8 +102,8 @@ class DiceManager:
         try:
             return self.dice_dict[item]
         except KeyError:
-            logging.warning("No key: %s" % item)
-            return None
+            logging.warning("No key: %s, returning other players dice" % item)
+            return self.str_dice_dict()
 
     def __len__(self):
         res = 0
@@ -138,6 +138,16 @@ class DiceManager:
         if not len(self.dice_dict[player_id]):
             self.kick_player(player_id)
             raise KickPLayerException
+
+    def str_dice_dict(self):
+        items = list(self.dice_dict.items())
+        s = '*Players dice*\n'
+
+        for i in items:
+            user = list(filter(lambda x: x.id == i[0], self.players))[0].username
+            s += f'{user}: {i[1]}\n'
+
+        return s
 
 
 class PlayerMove:
@@ -240,7 +250,7 @@ class GameSession:
         self.messages_to_delete = []
 
         mess_args = Phrase.on_change_turn(self.players[self.current_player].name)
-        mess = self.send_message(**mess_args, reply_markup=STOP_ROUND_MARKUP)
+        mess = self.send_message(**mess_args)
 
         self.messages_to_delete.append(mess)
 
@@ -250,7 +260,7 @@ class GameSession:
         if message.user != self.players[self.current_player]:
             return
 
-        if words[0] == Phrase.STOP_ROUND:
+        if words[0] in Phrase.STOP_ROUND:
             if self.prev_move is not None:
                 self.edit_pinned_message_by(message.mess_class)
                 self.on_open_up()
@@ -298,17 +308,7 @@ class GameSession:
 
         mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
 
-        def str_dice_dict(d: dict, players: list):
-            items = list(d.items())
-            s = '*Players cubes*\n'
-
-            for i in items:
-                user = list(filter(lambda x: x.id == i[0], players))[0].username
-                s += f'{user}: {i[1]}\n'
-
-            return s
-
-        s = str_dice_dict(self.dice_manager.dice_dict, self.players)
+        s = self.dice_manager.str_dice_dict()
         self.send_message(text=s, parse_mode=ParseMode.MARKDOWN)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
@@ -335,6 +335,11 @@ class GameSession:
         self.players.remove(player)
         self.current_player += 1
 
+        try:
+            self.dice_manager.dice_dict.pop(player)
+        except Exception:
+            pass
+
         mess_args = Phrase.on_kick_player(player.name)
         self.send_message(**mess_args)
 
@@ -342,23 +347,9 @@ class GameSession:
             self.end_game()
 
     def end_game(self):
-        winner = self.players[0]
-        # users_emoji[winner.username] = winner_emoji
+        winner = self.players[0].name if len(self.players > 0) else 'NULL'
 
-        # inc('new', 'winnings')
-        # inc('new', 'games')
-
-        # for player in self.chat.gm.added_players:
-        #     is_winner = int(player == winner)
-        #     try:
-        #         if is_winner:
-        #             db_inc(player.username, 'winnings')
-        #         db_inc(player.username, 'games')
-        #     except Exception as e:
-        #         user = User.create(username=player.username, games)
-
-
-        mess_args = Phrase.on_congratulate_winner(winner.name)
+        mess_args = Phrase.on_congratulate_winner(winner)
         self.send_message(**mess_args)
         self.chat.state = MyDialogState.DEFAULT
         self.chat.gm.reset_to_defaults()

@@ -13,7 +13,7 @@ import tglib.classes.command as my
 
 from constants import Phrase, MyDialogState
 from functions import get_reply_markup
-from game import STOP_ROUND_MARKUP, GameException, GameManager
+from game import GameException, GameManager
 
 debug = True
 
@@ -21,7 +21,6 @@ def game_exception_handling(e: Exception, update, _, chat):
     if isinstance(e, GameException):
         logging.warning('game ' + str(e))
         error_mess = chat.send_message(**e.mess_kwargs,
-                                       reply_markup=STOP_ROUND_MARKUP,
                                        reply_to_message_id=update.message.message_id)
         chat.gm.current_game.messages_to_delete.extend([error_mess, update.message])
         return error_mess
@@ -42,6 +41,7 @@ class MyChatHandler(ChatHandler):
         # <command_name> - (description, func to run)
         play = ('Start a new game', None)
         setdice = ('Set start dice count', None)
+        # settimeout = ('Set timeout', None)
         reset = ('Reset', None)
 
     @is_state(MyDialogState.DEFAULT)
@@ -58,7 +58,7 @@ class MyChatHandler(ChatHandler):
 
         try:
             cnt = int(command.entity_text)
-            self.gm.start_cubes_count = cnt
+            self.gm.dice_cnt = cnt
             self.send_message(**Phrase.ON_AGREE)
         except ValueError:
             raise BotMessageException(Phrase.ON_NO_COMMAND_ENTITY)
@@ -108,8 +108,8 @@ class MyChatHandler(ChatHandler):
             if self.state != MyDialogState.GAME_IS_ON:
                 return
 
-            cubes_set = self.gm.current_game.dice_manager[user.id]
-            self.send_alert(query.id, text=str(cubes_set))
+            dice_set = self.gm.current_game.dice_manager[user.id]
+            self.send_alert(query.id, text=str(dice_set))
 
         else:
             raise BotMessageException('unexpected callback_data string: ' + query.data)

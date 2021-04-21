@@ -42,7 +42,7 @@ class Phrase:
     ROUND_MESSAGE_APPEND_TURN = lambda x, y: f'\n*{x}* - `{y}`'
 
     BUTTON_DICE = 'My dice'
-    STOP_ROUND = 'Вскрываемся!'
+    STOP_ROUND = ['Вскрываемся!', '0']
 
     WRONG_MOVE_PATTERN = 'Incorrect move'
 
