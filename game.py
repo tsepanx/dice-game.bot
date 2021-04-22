@@ -141,7 +141,7 @@ class DiceManager:
 
     def str_dice_dict(self):
         items = list(self.dice_dict.items())
-        s = '*Players dice*\n'
+        s = 'Players dice\n'
 
         for i in items:
             user = list(filter(lambda x: x.id == i[0], self.players))[0].username
@@ -193,7 +193,7 @@ class GameSession:
 
         self.stored_cheat_moves = set()
 
-        self.current_player = 0
+        self.current_player = -1
         self.current_round = 0
         self.prev_move = None
 
@@ -223,7 +223,6 @@ class GameSession:
         self.new_turn()
 
     def edit_pinned_message_by(self, user_answer: telegram.Message):
-        # import pdb;pdb.set_trace()
         # if self.messages_to_delete:
         for d in self.messages_to_delete:
             self.chat.delete_message(d)
@@ -255,6 +254,7 @@ class GameSession:
         self.messages_to_delete.append(mess)
 
     def on_new_message(self, message: Message):
+        # import pdb;pdb.set_trace()
         words = message.text.split()
 
         if message.user != self.players[self.current_player]:
@@ -309,7 +309,7 @@ class GameSession:
         mess_args1 = Phrase.on_end_round_1(res_count, self.prev_move.value, use_cheat)
 
         s = self.dice_manager.str_dice_dict()
-        self.send_message(text=s, parse_mode=ParseMode.MARKDOWN)
+        self.send_message(text=s)
 
         self.send_message(**mess_args1, reply_markup=telegram.ReplyKeyboardRemove(), )
         self.send_message(**Phrase.on_lose(player.name))
