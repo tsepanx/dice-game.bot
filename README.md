@@ -11,7 +11,7 @@ Running bot instance is available at [@cool_cubes_bot](https://t.me/cool_cubes_b
 
 Uses my **[tglib](https://github.com/tsepanx/tglib)** project as a submodule, to manage `python-telegram-bot` library
 
-Docker image is available at [tsepanx/cubesbot](https://hub.docker.com/r/tsepanx/cubesbot)
+Docker image is available at [tsepanx/dicegame](https://hub.docker.com/r/tsepanx/dicegame)
 
 ### Some screenshots
 ![](https://i.imgur.com/Wcdyiwj.png)
