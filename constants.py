@@ -1,5 +1,5 @@
-import os
 from telegram import ParseMode
+
 
 class MyDialogState:
     DEFAULT = 0
@@ -64,7 +64,7 @@ class Phrase:
     @staticmethod
     def on_end_round_1(cnt, default_value, use_base_value):
         res = f'There are {cnt} dice of *' + \
-            (f' *{CHEAT_CARD_VALUE}*, ' if use_base_value else '') + f'{default_value}*'
+              (f' *{CHEAT_CARD_VALUE}*, ' if use_base_value else '') + f'{default_value}*'
 
         return {'text': res, 'parse_mode': ParseMode.MARKDOWN}
 

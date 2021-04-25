@@ -1,16 +1,14 @@
 import logging
 import random
-import time
 
 import telegram
 from telegram import ParseMode
 
+from constants import START_DICE_COUNT, MIN_CARD_VALUE, MAX_CARD_VALUE, CHEAT_CARD_VALUE, Phrase, MyDialogState, \
+    users_emoji
+from functions import convert, get_reply_markup
 from tglib.classes.chat import BotMessageException
 from tglib.classes.message import Message
-
-from constants import START_DICE_COUNT, MIN_CARD_VALUE, MAX_CARD_VALUE, CHEAT_CARD_VALUE, Phrase, MyDialogState, users_emoji, winner_emoji
-from functions import convert, get_reply_markup, get_reply_keyboard
-from db import User, db_inc
 
 DICE_REPLY_MARKUP = get_reply_markup('DICE', Phrase.BUTTON_DICE)
 
@@ -21,7 +19,7 @@ def random_list(a, b, n):
 
     for i in range(n):
         t = random.randint(a, b)
-        if i > 0 and t == res[i - 1]: # if got the same value, then `rerand` it
+        if i > 0 and t == res[i - 1]:  # if got the same value, then `rerand` it
             t = random.randint(a, b)
         res.append(t)
 
@@ -60,7 +58,7 @@ class IncorrectMoveException(GameException):
 
 class GameManager:
     current_game = None
-    added_players = [] # TODO shared between different chats
+    added_players = []  # TODO shared between different chats
     dice_cnt = START_DICE_COUNT
 
     def __init__(self, chat):
@@ -197,7 +195,7 @@ class GameSession:
         self.current_round = 0
         self.prev_move = None
 
-        self.messages_to_delete = [] # List of messages, deleted on turn passes to next player
+        self.messages_to_delete = []  # List of messages, deleted on turn passes to next player
         self.pinned_message = None
         self.pinned_message_text = None
 
@@ -232,7 +230,7 @@ class GameSession:
         self.chat.delete_message(user_answer)
 
         append_text = Phrase.ROUND_MESSAGE_APPEND_TURN(to_delete_text, sender)
-        self.pinned_message_text += append_text 
+        self.pinned_message_text += append_text
 
         self.edit_message(
             message=self.pinned_message,
@@ -296,7 +294,7 @@ class GameSession:
         self.prev_move = player_move
         self.new_turn()
 
-    def on_open_up(self): # Func runs on "Вскрываемся!"
+    def on_open_up(self):  # Func runs on "Вскрываемся!"
         dice_map = self.dice_manager.get_dice_map()
         res_count = dice_map[self.prev_move.value - 1]
 
@@ -386,4 +384,3 @@ class GameSession:
         text = self.decorate_nickname(text)
 
         return self.chat.edit_message(text=text, **kwargs)
-

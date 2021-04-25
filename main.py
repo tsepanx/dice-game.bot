@@ -1,21 +1,18 @@
-import enum
 import logging
 
 import telegram as tg
 
-from tglib.classes.chat import ChatHandler, BotMessageException
+import tglib.classes.command as my
+import tglib.classes.message as my
+from constants import Phrase, MyDialogState
+from game import GameException, GameManager
 from tglib.bot import Bot
+from tglib.classes.chat import ChatHandler, BotMessageException
 from tglib.types import MESSAGE_TYPES
 from tglib.utils import is_state, get_button_markup
 
-import tglib.classes.message as my
-import tglib.classes.command as my
-
-from constants import Phrase, MyDialogState
-from functions import get_reply_markup
-from game import GameException, GameManager
-
 debug = True
+
 
 def game_exception_handling(e: Exception, update, _, chat):
     if isinstance(e, GameException):
@@ -29,6 +26,7 @@ def game_exception_handling(e: Exception, update, _, chat):
 
 class MyChatHandler(ChatHandler):
     ONLY_ADMINS_COMMANDS = ['reset']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.join_message = None
@@ -52,7 +50,6 @@ class MyChatHandler(ChatHandler):
 
         self.join_message = self.send_message(**Phrase.WAIT_FOR_PLAYERS, reply_markup=reply_markup)
 
-
     def on_setdice(self, update: tg.Update):
         command = my.Command(self, update)
 
@@ -67,7 +64,6 @@ class MyChatHandler(ChatHandler):
         self.state = MyDialogState.DEFAULT
         self.gm.reset_to_defaults()
         self.send_message(**Phrase.ON_AGREE, reply_markup=tg.ReplyKeyboardRemove())
-
 
     def on_keyboard_callback_query(self, update: tg.Update):
         query = update.callback_query
@@ -96,7 +92,7 @@ class MyChatHandler(ChatHandler):
             else:
                 self.send_alert(query.id, text=Phrase.ALREADY_JOINED)
 
-            if debug or len(self.gm.added_players) > 1: # Enough players to start
+            if debug or len(self.gm.added_players) > 1:  # Enough players to start
                 reply_markup = get_button_markup(self.join_button, self.start_button)
 
                 self.edit_message(
