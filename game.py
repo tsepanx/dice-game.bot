@@ -345,7 +345,7 @@ class GameSession:
             self.end_game()
 
     def end_game(self):
-        winner = self.players[0].name if len(self.players > 0) else 'NULL'
+        winner = self.players[0].name if len(self.players) > 0 else 'NULL'
 
         mess_args = Phrase.on_congratulate_winner(winner)
         self.send_message(**mess_args)

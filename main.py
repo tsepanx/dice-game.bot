@@ -2,8 +2,8 @@ import logging
 
 import telegram as tg
 
-import tglib.classes.command as my
-import tglib.classes.message as my
+import tglib.classes.command as my_command
+import tglib.classes.message as my_message
 from constants import Phrase, MyDialogState
 from game import GameException, GameManager
 from tglib.bot import Bot
@@ -51,7 +51,7 @@ class MyChatHandler(ChatHandler):
         self.join_message = self.send_message(**Phrase.WAIT_FOR_PLAYERS, reply_markup=reply_markup)
 
     def on_setdice(self, update: tg.Update):
-        command = my.Command(self, update)
+        command = my_command.Command(self, update)
 
         try:
             cnt = int(command.entity_text)
@@ -116,7 +116,7 @@ class MyChatHandler(ChatHandler):
         print(update.message.text)
 
         if self.state == MyDialogState.GAME_IS_ON:
-            self.gm.on_new_message(my.Message(self, update))
+            self.gm.on_new_message(my_message.Message(self, update))
 
 
 if __name__ == '__main__':
